@@ -1,0 +1,4 @@
+*.ipynb_checkpoints
+jqiskit/__pycache__/
+*.egg-info/
+*.pyc
