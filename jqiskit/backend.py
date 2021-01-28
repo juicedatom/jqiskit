@@ -1,4 +1,4 @@
-from typing import Tuple, Dict, List
+from typing import Tuple, Dict, List, Iterable
 from collections import defaultdict
 from dataclasses import dataclass
 
@@ -48,77 +48,102 @@ def preprocess_parametric(program: List[Instruction],
     return ret
 
 
-def preprocess_swaps(program: List[Instruction]) -> List[Instruction]:
-    """Generate an equivalent list of constructions s.t. all gates have strictly contiguous inputs.
+def _generate_swap_indices(targets: Iterable[int]) -> List[Tuple[int, int]]:
+    """Given a list of indices, return the list of swaps required to move all indices towards the lowest index in the given order.
 
-    This is accomplished by inserting swaps before and after a instruction that has operations on
-    non contiguous wires. For example,
+    For example, let us assume that we are given [3, 6]. Then in an array, this would look like the following,
 
-    [Op(3, 6)] -> [Swap(5, 6), Swap(4, 5), Op(3, 4), Swap(4, 5), Swap(5, 6)]
+                  _ _ _ 0 _ _ 1
+    init          0 1 2 3 4 5 6
 
-    In addition, this preprocessing will also add swaps to gates that have out-of-order inputs.
+    the '3' index will remain where it is, as it is first in the given order. The '1' must be moved over to the
+    '0', or the 3 index. To do that, we perform the following swaps,
 
-    [Op(4, 3)] -> [Swap(3, 4), Op(3, 4), Swap(3, 4)]
+                  _ _ _ 0 _ 1 _ 
+    swap[5, 6]    0 1 2 3 4 5 6
 
-    And in the case where both of the above need to be done, the operations are compounded,
+                  _ _ _ 0 1 _ _ 
+    swap[4, 5]    0 1 2 3 4 5 6
 
-    [Op(5, 3)] -> [Swap(4, 5), Swap(3, 4), Op(3, 4), Swap(3, 4), Swap(4, 5)]
+    Therefore we would return [(5, 6), (4, 5)]
 
-    This currently handles only two inputs, but could easily be extended to handle gates of any
-    input size by generalizing the algorithm below. Note that any already valid instructions should
-    be unaffected.
+    Here's another example. What if the 3, 6 were swapped? Meaning, our input looked like [6, 3]
 
-    [Op(3, 4)] -> [Op(3, 4)]
+                  _ _ _ 1 _ _ 0
+    init          0 1 2 3 4 5 6
+
+    As before, we look for the lowest value (0) and move it towards the lowest index (3)
+
+                  _ _ _ 1 _ 0 _ 
+    swap[5, 6]    0 1 2 3 4 5 6
+
+                  _ _ _ 1 0 _ _ 
+    swap[4, 5]    0 1 2 3 4 5 6
+
+                  _ _ _ 0 1 _ _ 
+    swap[3, 4]    0 1 2 3 4 5 6
+
+    Since the 1 is already in the correct position, all we need to return is 
+
+        [(5, 6), (4, 5), (3, 4)]
+
 
     Args:
-        program: A list of gates.
+        targets: An ordered iterable of indices [i_1, i_2, ..., i_n] that are meant to appear in the order given.
 
+    Returns:
+        A list of tuples containing flip instructions. All indices within the tuples are guaranteed to be of the form
+        (a, a + 1) where a is an integer greater than or equal to 0.
+    """
+    swap_list = []
+    min_target = min(targets)
+    max_target = max(targets)
+    
+    offset = max_target - min_target
+    tmp = np.full((max_target - min_target + 1, ), np.nan)
+    
+    for idx, target in enumerate(targets):
+        tmp[target - min_target] = idx
+    for idx in range(len(targets)):
+        tmp_idx = np.where(tmp == idx)[0][0]
+        for jdx in reversed(range(idx + 1, tmp_idx + 1)):
+            swap_list.append((jdx - 1 + min_target, jdx + min_target))
+            tmp[jdx], tmp[jdx - 1] =  tmp[jdx - 1], tmp[jdx]
+            
+    return swap_list
+
+def preprocess_swaps(program: Iterable[Instruction]) -> List[Instruction]:
+    """Generate an equivalent list of constructions s.t. all gates have strictly contiguous inputs.
+ 
+    This is accomplished by inserting swaps before and after a instruction that has operations on
+    non contiguous wires. For example,
+ 
+    [Op(5, 3)] -> [Swap(4, 5), Swap(3, 4), Op(3, 4), Swap(3, 4), Swap(4, 5)]
+ 
+    # This will also leave the base case as a no-op.
+    [Op(3, 4)] -> [Op(3, 4)]
+ 
+    Args:
+        program: A list of gates.
+ 
     Returns:
         A new list of gates that is algebraically equivalent, but has strictly contiguous inputs.
     """
     ret = []
     for instruction in program:
-        targets = instruction.targets
-
-        if len(targets) == 1:
-            # Single target instructions don't need any preprocessing.
-            ret.append(instruction)
-        elif len(targets) == 2:
-            # Two target instructions might need some preprocessing.
-            min_idx = min(targets)
-            max_idx = max(targets)
-            n_flips = max_idx - min_idx - 1
-
-            # Bring the max index down to the min index. Note that this becomes a no-op if the
-            # wires are successive. e.g. n_flips: 0 = max_idx: 5 - min_idx: 4 - 1
-            for flip_idx in range(n_flips):
-                ret.append(SWAP(max_idx - flip_idx - 1, max_idx - flip_idx))
-
-            # All unitary operators assume wires that are in order (4, 5) != (5, 4). if that
-            # If this is not true, then we need to flip the wires.
-            invert_arguments = targets[0] > targets[
-                1] and not instruction.commutative
-
-            if invert_arguments:
-                ret.append(SWAP(min_idx, min_idx + 1))
-
-            # Finally! We can now add the gate that we have been trying to add this entire time.
-            ret.append(
-                Instruction((min_idx, min_idx + 1), instruction.unitary,
-                            instruction.commutative))
-
-            # Flip the wires back if we flipped them previously.
-            if invert_arguments:
-                ret.append(SWAP(min_idx, min_idx + 1))
-
-            # Send the max index back to the original spot.
-            for flip_idx in reversed(range(n_flips)):
-                ret.append(SWAP(max_idx - flip_idx - 1, max_idx - flip_idx))
-
-        else:
-            raise NotImplementedError(
-                'This simulator does not yet handle instructions with > 2 arguments.'
-            )
+        # Grab the min target for reference.
+        min_target = min(instruction.targets)
+        # Generate a list of swap indices.
+        swap_indices = _generate_swap_indices(instruction.targets)
+        # Convert those swap indices into SWAP operations.
+        swaps = [SWAP(idx, jdx) for (idx, jdx) in swap_indices]
+        # Assuming the swapping will work, the new instruction should be correctly contiguous.
+        new_instruction_targets = tuple(range(min_target, min_target + len(instruction.targets)))
+        # Build the new operator.
+        op = Instruction(new_instruction_targets, instruction.unitary, instruction.commutative)
+        # The new set of instructions will swap the gates s.t. they line up, then run the operator, and
+        # finally undo what it just did.
+        ret += swaps + [op] + list(reversed(swaps))
     return ret
 
 

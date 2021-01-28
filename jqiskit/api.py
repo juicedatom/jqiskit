@@ -141,8 +141,8 @@ class QuantumCircuit:
             )
 
         # Preprocess the instructions s.t. they can be fed into the engine.
-        processed = preprocess_swaps(self.program)
-        processed = preprocess_parametric(processed, feed_dict)
+        processed = preprocess_parametric(self.program, feed_dict)
+        processed = preprocess_swaps(processed)
 
         # For each gate, build each operator and perform the multiplication.
         final_state = run_program(processed, self.n_qubits, initial_state)
