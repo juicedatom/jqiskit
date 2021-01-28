@@ -1,7 +1,7 @@
 import numpy as np
 
-from jqiskit.backend import get_ground_state, preprocess_parametric, preprocess_parametric
-from jqiskit.gates import Parametric, Instruction
+from jqiskit.backend import get_ground_state, preprocess_parametric, preprocess_parametric, preprocess_swaps
+from jqiskit.gates import Parametric, Instruction, SWAP
 
 def test_ground_state() -> None:
     """Test generation of a ground state."""
@@ -50,4 +50,59 @@ def test_preprocess_parametric() -> None:
 
 def test_preprocess_swaps() -> None:
     """Test the swap-preprocessor."""
-    pass
+
+    # Preprocess an empty program.
+    assert preprocess_swaps([]) == []
+
+    # Preprocess a single instruction that's already valid (so nothing should happen).
+    dummy_instruction = Instruction([0, 1], [[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16]], False)
+    processed = preprocess_swaps([dummy_instruction])
+    assert len(processed) == 1
+
+    # Preprocess a single instruction that needs its leads flipped.
+    dummy_instruction = Instruction([1, 0], [[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16]], False)
+    processed = preprocess_swaps([dummy_instruction])
+    assert len(processed) == 3
+    assert isinstance(processed[0], SWAP)
+    assert processed[0].targets == (0, 1)
+    assert isinstance(processed[2], SWAP)
+    assert processed[2].targets == (0, 1)
+
+    # Preprocess a single instruction that needs to be pushed over.
+    dummy_instruction = Instruction([3, 6], [[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16]], False)
+    processed = preprocess_swaps([dummy_instruction])
+    assert len(processed) == 5
+    assert isinstance(processed[0], SWAP)
+    assert processed[0].targets == (5, 6)
+
+    assert isinstance(processed[1], SWAP)
+    assert processed[1].targets == (4, 5)
+
+    assert isinstance(processed[3], SWAP)
+    assert processed[3].targets == (4, 5)
+
+    assert isinstance(processed[4], SWAP)
+    assert processed[4].targets == (5, 6)
+
+    # Preprocess a single instruction that needs to be pushed over and flipped.
+    dummy_instruction = Instruction([6, 3], [[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16]], False)
+    processed = preprocess_swaps([dummy_instruction])
+    assert len(processed) == 7
+    assert isinstance(processed[0], SWAP)
+    assert processed[0].targets == (5, 6)
+
+    assert isinstance(processed[1], SWAP)
+    assert processed[1].targets == (4, 5)
+
+    assert isinstance(processed[2], SWAP)
+    assert processed[3].targets == (3, 4)
+
+    assert isinstance(processed[4], SWAP)
+    assert processed[4].targets == (3, 4)
+
+    assert isinstance(processed[1], SWAP)
+    assert processed[5].targets == (4, 5)
+
+    assert isinstance(processed[1], SWAP)
+    assert processed[6].targets == (5, 6)
+
