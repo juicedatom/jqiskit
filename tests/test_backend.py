@@ -1,6 +1,7 @@
 import numpy as np
+import pytest
 
-from jqiskit.backend import get_ground_state, preprocess_parametric, preprocess_parametric, preprocess_swaps
+from jqiskit.backend import get_ground_state, preprocess_parametric, preprocess_parametric, preprocess_swaps, get_counts, get_operator
 from jqiskit.gates import Parametric, Instruction, SWAP
 
 def test_ground_state() -> None:
@@ -16,7 +17,17 @@ def test_ground_state() -> None:
 
 
 def test_get_operator() -> None:
-    pass
+    """Get operator from individual gates."""
+
+    # Make sure that too many input are caught.
+    with pytest.raises(ValueError):
+        get_operator(10, SWAP(1, 5))
+
+    with pytest.raises(IndexError):
+        get_operator(3, SWAP(5, 6))
+
+    # Make sure grabbing the unitary from a minimal circuit is a no-op.
+    np.testing.assert_array_equal(get_operator(2, SWAP(0, 1)), SWAP(0, 1).unitary)
 
 
 def test_preprocess_parametric() -> None:
@@ -106,3 +117,30 @@ def test_preprocess_swaps() -> None:
     assert isinstance(processed[1], SWAP)
     assert processed[6].targets == (5, 6)
 
+def test_run_program() -> None:
+    """Test running an actual program."""
+    pass
+
+def test_get_counts() -> None:
+    """Test realizing a state."""
+
+    # Set the random seed for the monte-carlo.
+    np.random.seed(0)
+
+    # Test the ground state.
+    state = get_ground_state(2)
+
+    counts = get_counts(state, 100)
+    assert len(counts) == 1
+    assert counts['00'] == 100
+
+    # Test a more complex state by back-calculating the probability.
+    probs = np.array([0.25, 0.50, 0.125, 0.125])
+    state = np.sqrt(probs)
+
+    counts = get_counts(state, 10000)
+    assert len(counts) == 4
+    assert counts['00'] == 2546 # ~25.0%
+    assert counts['01'] == 4961 # ~50.0%
+    assert counts['10'] == 1230 # ~12.5%
+    assert counts['11'] == 1263 # ~12.5%

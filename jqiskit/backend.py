@@ -22,33 +22,6 @@ def get_ground_state(num_qubits: int) -> np.ndarray:
     return vec
 
 
-def get_operator(total_qubits: int, gate_unitary: np.ndarray, target_qubits: Tuple) -> np.ndarray:
-    """Given a unitary operator, builds an operator to run on a specific set of contiguous qubits.
-
-    Args:
-        total_qubits: The total number of qubits that the new operator will adhere to.
-        gate_unitary: The unitary operator to modify.
-        target_qubits: The qubits that the unitary will operate on. These qubits must be strictly contiguous,
-            i.e. 2, 3 or 4, 5 NOT 4, 6.
-
-    Returns:
-        A 2 ^ total_qubits x 2 ^ total_qubits operator.
-    """
-    # This formulation assumes that all numbers are sorted and consecutive.
-    if len(target_qubits) > 1 and target_qubits == list(range(min(target_qubits), max(target_qubits) + 1)):
-        raise ValueError(f'Target qubits must be sorted and consecutive. Got {target_qubits}')
-
-    # If the number of states matches the number of rows of the gate, then return the matrix.
-    if 2**total_qubits == gate_unitary.shape[0]:
-        return gate_unitary
-
-    # This is the smallest qubit in the list by construction.
-    min_qubit_index = target_qubits[0]
-
-    before = gate_unitary if min_qubit_index == 0 else np.kron(np.eye(2**min_qubit_index), gate_unitary)
-    qubits_after = total_qubits - min_qubit_index - len(target_qubits)
-    return np.kron(before, np.eye(2**(qubits_after)))
-
 def preprocess_parametric(program: List[Instruction], feed_dict: Dict[str, complex]) -> List[Instruction]:
     """For all parametric instructions in the list, evaluate them given the feed_dict variables.
 
@@ -139,6 +112,38 @@ def preprocess_swaps(program: List[Instruction]) -> List[Instruction]:
             raise NotImplementedError('This simulator does not yet handle instructions with > 2 arguments.')
     return ret
 
+def get_operator(total_qubits: int, instruction: Instruction) -> np.ndarray:
+    """Given a unitary operator, builds an operator to run on a specific set of contiguous qubits.
+
+    Args:
+        total_qubits: The total number of qubits that the new operator will adhere to.
+        gate_unitary: The unitary operator to modify.
+        target_qubits: The qubits that the unitary will operate on. These qubits must be strictly contiguous,
+            i.e. 2, 3 or 4, 5 NOT 4, 6.
+
+    Returns:
+        A 2 ^ total_qubits x 2 ^ total_qubits operator.
+    """
+    # This formulation assumes that all numbers are sorted and consecutive.
+    if len(instruction.targets) > 1 and not np.array_equal(instruction.targets, list(range(min(instruction.targets), max(instruction.targets) + 1))):
+        raise ValueError(f'Target qubits must be sorted and consecutive. Got {instruction.targets}')
+
+    # Make sure that the number of qubits is less tahn the given indices.
+    if max(instruction.targets) >= total_qubits:
+        raise IndexError('Index out of bounds exception.')
+
+    # If the number of states matches the number of rows of the gate, then return the matrix.
+    if 2**total_qubits == instruction.unitary.shape[0]:
+        return instruction.unitary
+
+    # This is the smallest qubit in the list by construction.
+    min_qubit_index = instruction.targets[0]
+
+    before = instruction.unitary if min_qubit_index == 0 else np.kron(np.eye(2**min_qubit_index), instruction.unitary)
+    qubits_after = total_qubits - min_qubit_index - len(instruction.targets)
+    return np.kron(before, np.eye(2**(qubits_after)))
+
+
 def run_program(program: List[Instruction], n_qubits: int, initial_state: np.ndarray) -> np.ndarray:
     """Run a program given a list of instructions.
 
@@ -152,7 +157,7 @@ def run_program(program: List[Instruction], n_qubits: int, initial_state: np.nda
     """
     operator = np.eye(len(initial_state))
     for instruction in program:
-        operator = operator @ get_operator(n_qubits, instruction.unitary, instruction.targets)
+        operator = operator @ get_operator(n_qubits, instruction)
     return initial_state.dot(operator)
 
 def _format_binary(num: int, padding: int) -> str:
@@ -177,4 +182,3 @@ def get_counts(state_vector: np.ndarray, num_shots: int) -> Dict[str, int]:
     counts = defaultdict(int)
     for sample in samples: counts[sample] += 1
     return dict(counts)
-
