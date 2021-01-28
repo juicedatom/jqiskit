@@ -37,24 +37,25 @@ def test_preprocess_parametric() -> None:
     assert preprocess_parametric([], {}) == []
 
     # Validate a very simple circuit.
-    circuit_in = [Parametric('[[1,2],[1 + 3j,4]]', [0])]
+    circuit_in = [Parametric('[[1.0, 0.0],[0.0, 1.0]]', [0])]
     circuit_out = preprocess_parametric(circuit_in, {})
 
-    np.testing.assert_array_equal(circuit_out[0].unitary, [[1., 2.],[1.0 + 3.0j, 4.]])
+    np.testing.assert_array_equal(circuit_out[0].unitary, [[1.0, 0.0],[0.0, 1.0]])
     assert circuit_in[0].targets == circuit_out[0].targets
 
     # Validate a simple circuit with replacement.
-    circuit_in = [Parametric('[[1,2],[1 + 3j,4 * alpha]]', [0])]
-    circuit_out = preprocess_parametric(circuit_in, {'alpha': 10.0})
+    circuit_in = [Parametric('[[1, 0],[0, exp(1.0j*theta)]]', [0])]
+    theta = np.pi / 3
+    circuit_out = preprocess_parametric(circuit_in, {'theta': theta})
 
-    np.testing.assert_array_equal(circuit_out[0].unitary, [[1., 2.],[1.0 + 3.0j, 4. * 10.]])
+    np.testing.assert_allclose(circuit_out[0].unitary, [[1., 0.],[0.0, np.exp(1.0j * theta)]])
     assert circuit_in[0].targets == circuit_out[0].targets
 
     # For the same circuit as before, add a second non-parametric gates.
-    circuit_in.append(Instruction([0], [[0., 0.],[0., 0.,]], True))
-    circuit_out = preprocess_parametric(circuit_in, {'alpha': 10.0})
+    circuit_in.append(Instruction([0], np.eye(2), True))
+    circuit_out = preprocess_parametric(circuit_in, {'theta': theta})
     assert len(circuit_out) == 2
-    np.testing.assert_array_equal(circuit_out[0].unitary, [[1., 2.],[1.0 + 3.0j, 4. * 10.]])
+    np.testing.assert_allclose(circuit_out[0].unitary, [[1., 0.],[0.0, np.exp(1.0j * theta)]])
     assert circuit_in[0].targets == circuit_out[0].targets
     assert circuit_in[1] == circuit_out[1]
 
@@ -66,12 +67,12 @@ def test_preprocess_swaps() -> None:
     assert preprocess_swaps([]) == []
 
     # Preprocess a single instruction that's already valid (so nothing should happen).
-    dummy_instruction = Instruction([0, 1], [[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16]], False)
+    dummy_instruction = Instruction([0, 1], np.eye(4), False)
     processed = preprocess_swaps([dummy_instruction])
     assert len(processed) == 1
 
     # Preprocess a single instruction that needs its leads flipped.
-    dummy_instruction = Instruction([1, 0], [[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16]], False)
+    dummy_instruction = Instruction([1, 0], np.eye(4), False)
     processed = preprocess_swaps([dummy_instruction])
     assert len(processed) == 3
     assert isinstance(processed[0], SWAP)
@@ -80,7 +81,7 @@ def test_preprocess_swaps() -> None:
     assert processed[2].targets == (0, 1)
 
     # Preprocess a single instruction that needs to be pushed over.
-    dummy_instruction = Instruction([3, 6], [[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16]], False)
+    dummy_instruction = Instruction([3, 6], np.eye(4), False)
     processed = preprocess_swaps([dummy_instruction])
     assert len(processed) == 5
     assert isinstance(processed[0], SWAP)
@@ -96,7 +97,7 @@ def test_preprocess_swaps() -> None:
     assert processed[4].targets == (5, 6)
 
     # Preprocess a single instruction that needs to be pushed over and flipped.
-    dummy_instruction = Instruction([6, 3], [[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16]], False)
+    dummy_instruction = Instruction([6, 3], np.eye(4), False)
     processed = preprocess_swaps([dummy_instruction])
     assert len(processed) == 7
     assert isinstance(processed[0], SWAP)

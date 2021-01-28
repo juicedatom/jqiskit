@@ -19,6 +19,12 @@ class Instruction:
         """Pretty-print instruction."""
         return f'{self.__class__.__name__}: {self.targets}'
 
+    def __post_init__(self):
+        """Check if the gate is unitary."""
+        conj = np.conjugate(self.unitary)
+        np.testing.assert_allclose(self.unitary @ conj.T, np.eye(self.unitary.shape[0]), err_msg='Operator not unitary!')
+        np.testing.assert_allclose(conj.T @ self.unitary, np.eye(self.unitary.shape[0]), err_msg='Operator not unitary!')
+
 class Hadamard(Instruction):
     """Implementation of the Hadamard Gate."""
 
@@ -147,3 +153,6 @@ class Parametric(Instruction):
             raise ValueError('Must include the same number of targets as required by the unitary matrix.')
 
         super().__init__(targets, unitary, n_args == 1)
+
+    def __post_init__(self) -> None:
+        """We override the post-init check to be unitary until it becomes a fully-realized instruction."""
