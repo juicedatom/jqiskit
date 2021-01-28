@@ -22,7 +22,8 @@ def get_ground_state(num_qubits: int) -> np.ndarray:
     return vec
 
 
-def preprocess_parametric(program: List[Instruction], feed_dict: Dict[str, complex]) -> List[Instruction]:
+def preprocess_parametric(program: List[Instruction],
+                          feed_dict: Dict[str, complex]) -> List[Instruction]:
     """For all parametric instructions in the list, evaluate them given the feed_dict variables.
 
     Args:
@@ -32,17 +33,20 @@ def preprocess_parametric(program: List[Instruction], feed_dict: Dict[str, compl
     Returns:
         A new list of instructions without any Parametric gates.
     """
-    evaluate_vectorized = np.vectorize(lambda cell: complex(cell.evalf(subs=feed_dict)))
+    evaluate_vectorized = np.vectorize(
+        lambda cell: complex(cell.evalf(subs=feed_dict)))
     ret = []
     for instruction in program:
         if isinstance(instruction, Parametric):
             unitary = evaluate_vectorized(instruction.unitary)
-            ret.append(Instruction(targets     = instruction.targets,
-                                   unitary     = unitary,
-                                   commutative = instruction.commutative))
+            ret.append(
+                Instruction(targets=instruction.targets,
+                            unitary=unitary,
+                            commutative=instruction.commutative))
         else:
             ret.append(instruction)
     return ret
+
 
 def preprocess_swaps(program: List[Instruction]) -> List[Instruction]:
     """Generate an equivalent list of constructions s.t. all gates have strictly contiguous inputs.
@@ -92,13 +96,16 @@ def preprocess_swaps(program: List[Instruction]) -> List[Instruction]:
 
             # All unitary operators assume wires that are in order (4, 5) != (5, 4). if that
             # If this is not true, then we need to flip the wires.
-            invert_arguments = targets[0] > targets[1] and not instruction.commutative
+            invert_arguments = targets[0] > targets[
+                1] and not instruction.commutative
 
             if invert_arguments:
                 ret.append(SWAP(min_idx, min_idx + 1))
 
             # Finally! We can now add the gate that we have been trying to add this entire time.
-            ret.append(Instruction((min_idx, min_idx + 1), instruction.unitary, instruction.commutative))
+            ret.append(
+                Instruction((min_idx, min_idx + 1), instruction.unitary,
+                            instruction.commutative))
 
             # Flip the wires back if we flipped them previously.
             if invert_arguments:
@@ -109,8 +116,11 @@ def preprocess_swaps(program: List[Instruction]) -> List[Instruction]:
                 ret.append(SWAP(max_idx - flip_idx - 1, max_idx - flip_idx))
 
         else:
-            raise NotImplementedError('This simulator does not yet handle instructions with > 2 arguments.')
+            raise NotImplementedError(
+                'This simulator does not yet handle instructions with > 2 arguments.'
+            )
     return ret
+
 
 def get_operator(total_qubits: int, instruction: Instruction) -> np.ndarray:
     """Given a unitary operator, builds an operator to run on a specific set of contiguous qubits.
@@ -125,8 +135,13 @@ def get_operator(total_qubits: int, instruction: Instruction) -> np.ndarray:
         A 2 ^ total_qubits x 2 ^ total_qubits operator.
     """
     # This formulation assumes that all numbers are sorted and consecutive.
-    if len(instruction.targets) > 1 and not np.array_equal(instruction.targets, list(range(min(instruction.targets), max(instruction.targets) + 1))):
-        raise ValueError(f'Target qubits must be sorted and consecutive. Got {instruction.targets}')
+    if len(instruction.targets) > 1 and not np.array_equal(
+            instruction.targets,
+            list(range(min(instruction.targets),
+                       max(instruction.targets) + 1))):
+        raise ValueError(
+            f'Target qubits must be sorted and consecutive. Got {instruction.targets}'
+        )
 
     # Make sure that the number of qubits is less tahn the given indices.
     if max(instruction.targets) >= total_qubits:
@@ -139,12 +154,14 @@ def get_operator(total_qubits: int, instruction: Instruction) -> np.ndarray:
     # This is the smallest qubit in the list by construction.
     min_qubit_index = instruction.targets[0]
 
-    before = instruction.unitary if min_qubit_index == 0 else np.kron(np.eye(2**min_qubit_index), instruction.unitary)
+    before = instruction.unitary if min_qubit_index == 0 else np.kron(
+        np.eye(2**min_qubit_index), instruction.unitary)
     qubits_after = total_qubits - min_qubit_index - len(instruction.targets)
     return np.kron(before, np.eye(2**(qubits_after)))
 
 
-def run_program(program: List[Instruction], n_qubits: int, initial_state: np.ndarray) -> np.ndarray:
+def run_program(program: List[Instruction], n_qubits: int,
+                initial_state: np.ndarray) -> np.ndarray:
     """Run a program given a list of instructions.
 
     Args:
@@ -160,9 +177,11 @@ def run_program(program: List[Instruction], n_qubits: int, initial_state: np.nda
         operator = operator @ get_operator(n_qubits, instruction)
     return initial_state.dot(operator)
 
+
 def _format_binary(num: int, padding: int) -> str:
     """Format a number in binary."""
     return format(num, f'#0{padding + 2}b')[2:]
+
 
 def get_counts(state_vector: np.ndarray, num_shots: int) -> Dict[str, int]:
     """Run a monte-carlo simulation to sample a state vector.
@@ -177,8 +196,12 @@ def get_counts(state_vector: np.ndarray, num_shots: int) -> Dict[str, int]:
     # Technically if this is weighted by the same scalar, we don't need to normalize
     # if we really cared about efficiency.
     probs = np.abs(state_vector)**2 / np.linalg.norm(state_vector)**2
-    states = [_format_binary(idx, int(np.log2(len(state_vector)))) for idx in range(len(state_vector))]
-    samples = choice(states, num_shots, p = probs)
+    states = [
+        _format_binary(idx, int(np.log2(len(state_vector))))
+        for idx in range(len(state_vector))
+    ]
+    samples = choice(states, num_shots, p=probs)
     counts = defaultdict(int)
-    for sample in samples: counts[sample] += 1
+    for sample in samples:
+        counts[sample] += 1
     return dict(counts)

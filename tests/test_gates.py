@@ -1,5 +1,14 @@
+import numpy as np
 import pytest
-from jqiskit.gates import Parametric
+
+from jqiskit.gates import Parametric, Instruction
+
+
+def test_unitary() -> None:
+    """Validate that non-unitary gates are caught."""
+    with pytest.raises(ValueError):
+        Instruction([0], np.array([[1., 2.],[3., 4.]]), False)
+
 
 def test_parametric_gate_inputs() -> None:
     """Test all validation for parametric gates."""

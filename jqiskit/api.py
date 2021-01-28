@@ -5,15 +5,16 @@ import numpy as np
 from .gates import CX, CY, CZ, Hadamard, SWAP, SQRTNOT, Parametric
 from .backend import run_program, get_ground_state, preprocess_swaps, preprocess_parametric, get_counts
 
+
 class QuantumCircuit:
     """An object-oriented frontend to the more functional backend to allow a nicer api to build a circuit."""
-
     def __init__(self, n_qubits: int) -> None:
         # A list to hold the program contents.
         self.program = []
 
         if n_qubits <= 0:
-            raise ValueError(f'Number of qubits must be strictly positive, got {n_qubits}')
+            raise ValueError(
+                f'Number of qubits must be strictly positive, got {n_qubits}')
 
         # The number of qubits this circuit is built for.
         self.n_qubits = n_qubits
@@ -42,7 +43,6 @@ class QuantumCircuit:
         """
         self._check_bounds(target)
         self.program.append(Hadamard(target))
-
 
     def sqrtnot(self, target: int) -> None:
         """Add a SQRT NOT gate to the circuit.
@@ -131,10 +131,14 @@ class QuantumCircuit:
 
         # The initial state must fully enumerate all possible states.
         if 2**self.n_qubits != len(initial_state):
-            raise ValueError(f'Invalid initial state, must have exactly 2^{self.n_qubits} elements., instead found {len(initial_state)}')
+            raise ValueError(
+                f'Invalid initial state, must have exactly 2^{self.n_qubits} elements., instead found {len(initial_state)}'
+            )
 
         if num_shots < 0:
-            raise ValueError('Number of shots must be greater than 0. Instead, got {num_shots}')
+            raise ValueError(
+                'Number of shots must be greater than 0. Instead, got {num_shots}'
+            )
 
         # Preprocess the instructions s.t. they can be fed into the engine.
         processed = preprocess_swaps(self.program)
@@ -142,6 +146,6 @@ class QuantumCircuit:
 
         # For each gate, build each operator and perform the multiplication.
         final_state = run_program(processed, self.n_qubits, initial_state)
-        
+
         # Run the monte-carlo simulation.
         return get_counts(final_state, num_shots), final_state

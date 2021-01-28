@@ -4,7 +4,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="jqiskit-juicedatom", # Replace with your own username
+    name="jqiskit-juicedatom",  # Replace with your own username
     version="0.0.1",
     author="Joshua Manela",
     author_email="juicedatom@gmail.com",

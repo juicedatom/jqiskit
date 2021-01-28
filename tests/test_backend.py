@@ -4,6 +4,7 @@ import pytest
 from jqiskit.backend import get_ground_state, preprocess_parametric, preprocess_parametric, preprocess_swaps, get_counts, get_operator, run_program
 from jqiskit.gates import Parametric, Instruction, SWAP, Hadamard, CX
 
+
 def test_ground_state() -> None:
     """Test generation of a ground state."""
     state = get_ground_state(1)
@@ -13,7 +14,16 @@ def test_ground_state() -> None:
     np.testing.assert_allclose(state, [1., 0., 0., 0.])
 
     state = get_ground_state(3)
-    np.testing.assert_allclose(state, [1., 0., 0., 0., 0., 0., 0., 0.,])
+    np.testing.assert_allclose(state, [
+        1.,
+        0.,
+        0.,
+        0.,
+        0.,
+        0.,
+        0.,
+        0.,
+    ])
 
 
 def test_get_operator() -> None:
@@ -27,7 +37,8 @@ def test_get_operator() -> None:
         get_operator(3, SWAP(5, 6))
 
     # Make sure grabbing the unitary from a minimal circuit is a no-op.
-    np.testing.assert_array_equal(get_operator(2, SWAP(0, 1)), SWAP(0, 1).unitary)
+    np.testing.assert_array_equal(get_operator(2, SWAP(0, 1)),
+                                  SWAP(0, 1).unitary)
 
 
 def test_preprocess_parametric() -> None:
@@ -40,7 +51,8 @@ def test_preprocess_parametric() -> None:
     circuit_in = [Parametric('[[1.0, 0.0],[0.0, 1.0]]', [0])]
     circuit_out = preprocess_parametric(circuit_in, {})
 
-    np.testing.assert_array_equal(circuit_out[0].unitary, [[1.0, 0.0],[0.0, 1.0]])
+    np.testing.assert_array_equal(circuit_out[0].unitary,
+                                  [[1.0, 0.0], [0.0, 1.0]])
     assert circuit_in[0].targets == circuit_out[0].targets
 
     # Validate a simple circuit with replacement.
@@ -48,14 +60,16 @@ def test_preprocess_parametric() -> None:
     theta = np.pi / 3
     circuit_out = preprocess_parametric(circuit_in, {'theta': theta})
 
-    np.testing.assert_allclose(circuit_out[0].unitary, [[1., 0.],[0.0, np.exp(1.0j * theta)]])
+    np.testing.assert_allclose(circuit_out[0].unitary,
+                               [[1., 0.], [0.0, np.exp(1.0j * theta)]])
     assert circuit_in[0].targets == circuit_out[0].targets
 
     # For the same circuit as before, add a second non-parametric gates.
     circuit_in.append(Instruction([0], np.eye(2), True))
     circuit_out = preprocess_parametric(circuit_in, {'theta': theta})
     assert len(circuit_out) == 2
-    np.testing.assert_allclose(circuit_out[0].unitary, [[1., 0.],[0.0, np.exp(1.0j * theta)]])
+    np.testing.assert_allclose(circuit_out[0].unitary,
+                               [[1., 0.], [0.0, np.exp(1.0j * theta)]])
     assert circuit_in[0].targets == circuit_out[0].targets
     assert circuit_in[1] == circuit_out[1]
 
@@ -118,6 +132,7 @@ def test_preprocess_swaps() -> None:
     assert isinstance(processed[1], SWAP)
     assert processed[6].targets == (5, 6)
 
+
 def test_run_program() -> None:
     """Test running an actual program.
 
@@ -129,15 +144,20 @@ def test_run_program() -> None:
     np.testing.assert_almost_equal(new_state, [1 / np.sqrt(2), 1 / np.sqrt(2)])
 
     # Two h gates should invert each other.
-    new_state = run_program([Hadamard(0), Hadamard(0)], 1, np.array([1.0, 0.0]))
+    new_state = run_program([Hadamard(0), Hadamard(0)], 1, np.array([1.0,
+                                                                     0.0]))
     np.testing.assert_almost_equal(new_state, [1.0, 0.0])
 
     # CX Example from the task.
-    new_state = run_program([Hadamard(0), CX(0, 1)], 2, np.array([1.0, 0.0, 0.0, 0.0]))
-    np.testing.assert_almost_equal(new_state, [1 / np.sqrt(2), 0., 0., 1 / np.sqrt(2)])
+    new_state = run_program([Hadamard(0), CX(0, 1)], 2,
+                            np.array([1.0, 0.0, 0.0, 0.0]))
+    np.testing.assert_almost_equal(new_state,
+                                   [1 / np.sqrt(2), 0., 0., 1 / np.sqrt(2)])
 
-    new_state = run_program([Hadamard(0), CX(0, 1)], 2, np.array([0.0, 1.0, 0.0, 0.0]))
-    np.testing.assert_almost_equal(new_state, [0.0, 1 / np.sqrt(2), 1 / np.sqrt(2), 0.0])
+    new_state = run_program([Hadamard(0), CX(0, 1)], 2,
+                            np.array([0.0, 1.0, 0.0, 0.0]))
+    np.testing.assert_almost_equal(new_state,
+                                   [0.0, 1 / np.sqrt(2), 1 / np.sqrt(2), 0.0])
 
 
 def test_get_counts() -> None:
@@ -159,7 +179,7 @@ def test_get_counts() -> None:
 
     counts = get_counts(state, 10000)
     assert len(counts) == 4
-    assert counts['00'] == 2546 # ~25.0%
-    assert counts['01'] == 4961 # ~50.0%
-    assert counts['10'] == 1230 # ~12.5%
-    assert counts['11'] == 1263 # ~12.5%
+    assert counts['00'] == 2546  # ~25.0%
+    assert counts['01'] == 4961  # ~50.0%
+    assert counts['10'] == 1230  # ~12.5%
+    assert counts['11'] == 1263  # ~12.5%
