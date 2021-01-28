@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from jqiskit.backend import get_ground_state, preprocess_parametric, preprocess_parametric, preprocess_swaps, get_counts, get_operator
-from jqiskit.gates import Parametric, Instruction, SWAP
+from jqiskit.backend import get_ground_state, preprocess_parametric, preprocess_parametric, preprocess_swaps, get_counts, get_operator, run_program
+from jqiskit.gates import Parametric, Instruction, SWAP, Hadamard, CX
 
 def test_ground_state() -> None:
     """Test generation of a ground state."""
@@ -119,8 +119,26 @@ def test_preprocess_swaps() -> None:
     assert processed[6].targets == (5, 6)
 
 def test_run_program() -> None:
-    """Test running an actual program."""
-    pass
+    """Test running an actual program.
+
+    Note that this will only be testing limited functionality given that run_program requires
+    the code to be preprocessed. The rest of this will be tested on the api side.
+    """
+    # One h gate should bring us into super position.
+    new_state = run_program([Hadamard(0)], 1, np.array([1.0, 0.0]))
+    np.testing.assert_almost_equal(new_state, [1 / np.sqrt(2), 1 / np.sqrt(2)])
+
+    # Two h gates should invert each other.
+    new_state = run_program([Hadamard(0), Hadamard(0)], 1, np.array([1.0, 0.0]))
+    np.testing.assert_almost_equal(new_state, [1.0, 0.0])
+
+    # CX Example from the task.
+    new_state = run_program([Hadamard(0), CX(0, 1)], 2, np.array([1.0, 0.0, 0.0, 0.0]))
+    np.testing.assert_almost_equal(new_state, [1 / np.sqrt(2), 0., 0., 1 / np.sqrt(2)])
+
+    new_state = run_program([Hadamard(0), CX(0, 1)], 2, np.array([0.0, 1.0, 0.0, 0.0]))
+    np.testing.assert_almost_equal(new_state, [0.0, 1 / np.sqrt(2), 1 / np.sqrt(2), 0.0])
+
 
 def test_get_counts() -> None:
     """Test realizing a state."""
