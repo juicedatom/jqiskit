@@ -139,6 +139,10 @@ def test_run_program() -> None:
     Note that this will only be testing limited functionality given that run_program requires
     the code to be preprocessed. The rest of this will be tested on the api side.
     """
+    # Test no-op program.
+    new_state = run_program([], 1, np.array([1.0, 0.0]))
+    np.testing.assert_almost_equal(new_state, [1.0, 0.0])
+
     # One h gate should bring us into super position.
     new_state = run_program([Hadamard(0)], 1, np.array([1.0, 0.0]))
     np.testing.assert_almost_equal(new_state, [1 / np.sqrt(2), 1 / np.sqrt(2)])
