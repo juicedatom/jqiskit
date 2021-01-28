@@ -122,14 +122,14 @@ def preprocess_swaps(program: List[Instruction]) -> List[Instruction]:
             invert_arguments = targets[0] > targets[1] and not instruction.commutative
 
             if invert_arguments:
-                ret.append(SWAP(targets[1], targets[0]))
+                ret.append(SWAP(min_idx, min_idx + 1))
 
             # Finally! We can now add the gate that we have been trying to add this entire time.
             ret.append(Instruction((min_idx, min_idx + 1), instruction.unitary, instruction.commutative))
 
             # Flip the wires back if we flipped them previously.
             if invert_arguments:
-                ret.append(SWAP(targets[1], targets[0]))
+                ret.append(SWAP(min_idx, min_idx + 1))
 
             # Send the max index back to the original spot.
             for flip_idx in reversed(range(n_flips)):
