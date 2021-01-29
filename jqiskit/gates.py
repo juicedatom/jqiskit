@@ -173,7 +173,6 @@ class Parametric(Instruction):
             raise ValueError('Invalid dimensions.')
 
         n_args = int(n_args)
-        print(n_args)
 
         if len(targets) != n_args:
             raise ValueError('Must include the same number of targets as required by the unitary matrix.')
