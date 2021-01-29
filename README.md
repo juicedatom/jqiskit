@@ -4,7 +4,7 @@ This module was written as the respones to Task 3 of the QOSF mentorship program
 If I were to continue this project, I would plumb the sympy matrices all the way through the simulation s.t. the matrix can actually be differentialble. I think it's set up s.t. it is very possible. That way you could differentiate your circuit and do cooler optimization type things.
 
 ## Installation
-`cd` into the `jqiskit` folder and simply run the following,
+Simply install the package in the top level directory by running,
 
 ```
 pip install -e .
