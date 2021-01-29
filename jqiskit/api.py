@@ -2,7 +2,7 @@ from typing import Optional, Dict, List
 
 import numpy as np
 
-from .gates import CX, CY, CZ, Hadamard, SWAP, SQRTNOT, Parametric
+from .gates import CX, CY, CZ, Hadamard, SWAP, CSWAP, SQRTNOT, Parametric
 from .backend import run_program, get_ground_state, preprocess_swaps, preprocess_parametric, get_counts
 
 
@@ -99,6 +99,19 @@ class QuantumCircuit:
         self._check_bounds(control)
         self._check_bounds(target)
         self.program.append(SWAP(p, q))
+
+    def cswap(self, control: int, p: int, q: int):
+        """ Add the cswap gate to the circuit.
+
+        Args:
+            control: bit to control the flip.
+            p: bit to swap with q.
+            q: bit to swap with p.
+        """
+        self._check_bounds(control)
+        self._check_bounds(p)
+        self._check_bounds(q)
+        self.program.append(CSWAP(control, p, q))
 
     def parametric(self, unitary_str: str, *targets: List[int]) -> None:
         """Add a parametric gate to the circuit.

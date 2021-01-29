@@ -133,6 +133,30 @@ class SWAP(Instruction):
         ])
         super().__init__((p, q), unitary, True)
 
+
+class CSWAP(Instruction):
+    """Implementation of the SWAP gate."""
+
+    def __init__(self, control: int, p: int, q: int):
+        """ Build the gate.
+
+        Args:
+            control: bit to control the flip.
+            p: bit to swap with q.
+            q: bit to swap with p.
+        """
+        unitary = np.array([
+            [1., 0., 0., 0., 0., 0., 0., 0.],
+            [0., 1., 0., 0., 0., 0., 0., 0.],
+            [0., 0., 1., 0., 0., 0., 0., 0.],
+            [0., 0., 0., 1., 0., 0., 0., 0.],
+            [0., 0., 0., 0., 1., 0., 0., 0.],
+            [0., 0., 0., 0., 0., 0., 1., 0.],
+            [0., 0., 0., 0., 0., 1., 0., 0.],
+            [0., 0., 0., 0., 0., 0., 0., 1.],
+        ])
+        super().__init__((control, p, q), unitary, True)
+
 class Parametric(Instruction):
     def __init__(self, unitary_str: str, targets: List[int]):
         unitary = np.array(parse_expr(unitary_str))
