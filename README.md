@@ -15,7 +15,16 @@ That should install the jqiskit library and allow for it's api usage.
 
 ## Examples
 
-You will find several examples of usage in the `notebooks/` directory. Note that in order to run the `QiskitComparison` notebook you'll need to `pip install qiskit`. I didn't include it in the `setup.py` because it's not needed in the actual `jqiskit` library.
+You will find several examples of usage in the `notebooks/` directory. Note that in order to run the `QiskitComparison` notebook you'll need to `pip install qiskit`. I didn't include it in the `setup.py` because it's not needed in the actual `jqiskit` library. If you want to look at the meat of the code, you should check under the `jqiskit/` subfolder. There, you will see three files.
+
+### api.py
+This file holds the fundamental usage and implementation of the `QuantumCircuit` clone.
+
+### gates.py
+This file holds all the different gates required for the simulation, and the fundamental base-level gates.
+
+### backend.py
+This file holds all the real nitty-gritty business logic required to get everything to work.
 
 ## Testing
 
