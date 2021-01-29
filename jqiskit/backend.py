@@ -115,6 +115,9 @@ def _generate_swap_indices(targets: Iterable[int]) -> List[Tuple[int, int]]:
 def preprocess_swaps(program: Iterable[Instruction]) -> List[Instruction]:
     """Generate an equivalent list of constructions s.t. all gates have strictly contiguous inputs.
  
+    If all the operators have striclty contiguous inputs, then it becomes easier to generate
+    operations on them using simple rules like I x A x I x I, etc...
+
     This is accomplished by inserting swaps before and after a instruction that has operations on
     non contiguous wires. For example,
  
