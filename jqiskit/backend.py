@@ -1,3 +1,5 @@
+"""This module handles all the real work to run the quantum simulation."""
+
 from typing import Tuple, Dict, List, Iterable
 from collections import defaultdict
 from dataclasses import dataclass
@@ -98,19 +100,20 @@ def _generate_swap_indices(targets: Iterable[int]) -> List[Tuple[int, int]]:
     swap_list = []
     min_target = min(targets)
     max_target = max(targets)
-    
+
     offset = max_target - min_target
     tmp = np.full((max_target - min_target + 1, ), np.nan)
-    
+
     for idx, target in enumerate(targets):
         tmp[target - min_target] = idx
     for idx in range(len(targets)):
         tmp_idx = np.where(tmp == idx)[0][0]
         for jdx in reversed(range(idx + 1, tmp_idx + 1)):
             swap_list.append((jdx - 1 + min_target, jdx + min_target))
-            tmp[jdx], tmp[jdx - 1] =  tmp[jdx - 1], tmp[jdx]
-            
+            tmp[jdx], tmp[jdx - 1] = tmp[jdx - 1], tmp[jdx]
+
     return swap_list
+
 
 def preprocess_swaps(program: Iterable[Instruction]) -> List[Instruction]:
     """Generate an equivalent list of constructions s.t. all gates have strictly contiguous inputs.
@@ -141,9 +144,11 @@ def preprocess_swaps(program: Iterable[Instruction]) -> List[Instruction]:
         # Convert those swap indices into SWAP operations.
         swaps = [SWAP(idx, jdx) for (idx, jdx) in swap_indices]
         # Assuming the swapping will work, the new instruction should be correctly contiguous.
-        new_instruction_targets = tuple(range(min_target, min_target + len(instruction.targets)))
+        new_instruction_targets = tuple(
+            range(min_target, min_target + len(instruction.targets)))
         # Build the new operator.
-        op = Instruction(new_instruction_targets, instruction.unitary, instruction.commutative)
+        op = Instruction(new_instruction_targets, instruction.unitary,
+                         instruction.commutative)
         # The new set of instructions will swap the gates s.t. they line up, then run the operator, and
         # finally undo what it just did.
         ret += swaps + [op] + list(reversed(swaps))

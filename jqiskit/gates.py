@@ -1,8 +1,11 @@
+"""This module holds all the pre-built gates."""
+
 from dataclasses import dataclass
 from typing import Tuple, List
 
 from sympy.parsing.sympy_parser import parse_expr
 import numpy as np
+
 
 @dataclass(frozen=True)
 class Instruction:
@@ -22,14 +25,16 @@ class Instruction:
     def __post_init__(self):
         """Check if the gate is unitary."""
         conj = np.conjugate(self.unitary)
-        left = np.allclose(self.unitary @ conj.T, np.eye(self.unitary.shape[0]))
-        right = np.allclose(conj.T @ self.unitary, np.eye(self.unitary.shape[0]))
+        left = np.allclose(self.unitary @ conj.T,
+                           np.eye(self.unitary.shape[0]))
+        right = np.allclose(conj.T @ self.unitary,
+                            np.eye(self.unitary.shape[0]))
         if not (left and right):
             raise ValueError('Gate matrix not unitary!')
 
+
 class Hadamard(Instruction):
     """Implementation of the Hadamard Gate."""
-
     def __init__(self, target: int) -> None:
         """Create the gate.
 
@@ -37,14 +42,14 @@ class Hadamard(Instruction):
             target: The bit to mutate.
         """
         unitary = 1 / np.sqrt(2) * np.array([
-            [1,  1],
-            [1, -1]
+            [1, 1],
+            [1, -1],
         ])
-        super().__init__((target,), unitary, True)
+        super().__init__((target, ), unitary, True)
+
 
 class SQRTNOT(Instruction):
     """Implementation of the square root of the cx gate."""
-
     def __init__(self, target: int) -> None:
         """Build the gate.
 
@@ -53,14 +58,14 @@ class SQRTNOT(Instruction):
             
         """
         unitary = 1 / 2 * np.array([
-            [1 + 1j,  1 - 1j],
-            [1 - 1j,  1 + 1j]
+            [1 + 1j, 1 - 1j],
+            [1 - 1j, 1 + 1j],
         ])
-        super().__init__((target,), unitary, True)
+        super().__init__((target, ), unitary, True)
+
 
 class CX(Instruction):
     """Implementation of the CNOT gate."""
-
     def __init__(self, control, target) -> None:
         """Build the gate.
 
@@ -73,13 +78,13 @@ class CX(Instruction):
             [1, 0, 0, 0],
             [0, 1, 0, 0],
             [0, 0, 0, 1],
-            [0, 0, 1, 0]
+            [0, 0, 1, 0],
         ])
         super().__init__((control, target), unitary, False)
+
 
 class CY(Instruction):
     """Implementation of the controlled pauli-y gate."""
-
     def __init__(self, control, target) -> None:
         """Build the gate.
 
@@ -89,16 +94,16 @@ class CY(Instruction):
             
         """
         unitary = np.array([
-            [1, 0,  0,   0],
-            [0, 1,  0,   0],
-            [0, 0,  0, -1j],
-            [0, 0, 1j,   0]
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 0, -1j],
+            [0, 0, 1j, 0],
         ])
         super().__init__((control, target), unitary, False)
+
 
 class CZ(Instruction):
     """Implementation of the controlled pauli-z gate."""
-
     def __init__(self, control, target) -> None:
         """Build the gate.
 
@@ -108,16 +113,16 @@ class CZ(Instruction):
             
         """
         unitary = np.array([
-            [1, 0, 0,  0],
-            [0, 1, 0,  0],
-            [0, 0, 1,  0],
-            [0, 0, 0, -1]
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, -1],
         ])
         super().__init__((control, target), unitary, False)
 
+
 class SWAP(Instruction):
     """Implementation of the SWAP gate."""
-
     def __init__(self, p: int, q: int) -> None:
         """ Build the gate.
 
@@ -129,14 +134,13 @@ class SWAP(Instruction):
             [1, 0, 0, 0],
             [0, 0, 1, 0],
             [0, 1, 0, 0],
-            [0, 0, 0, 1]
+            [0, 0, 0, 1],
         ])
         super().__init__((p, q), unitary, True)
 
 
 class CSWAP(Instruction):
     """Implementation of the SWAP gate."""
-
     def __init__(self, control: int, p: int, q: int):
         """ Build the gate.
 
@@ -157,6 +161,7 @@ class CSWAP(Instruction):
         ])
         super().__init__((control, p, q), unitary, True)
 
+
 class Parametric(Instruction):
     def __init__(self, unitary_str: str, targets: List[int]):
         unitary = np.array(parse_expr(unitary_str))
@@ -175,7 +180,9 @@ class Parametric(Instruction):
         n_args = int(n_args)
 
         if len(targets) != n_args:
-            raise ValueError('Must include the same number of targets as required by the unitary matrix.')
+            raise ValueError(
+                'Must include the same number of targets as required by the unitary matrix.'
+            )
 
         super().__init__(targets, unitary, n_args == 1)
 

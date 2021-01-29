@@ -2,6 +2,7 @@ import numpy as np
 
 from jqiskit.api import QuantumCircuit
 
+
 def test_simple_program() -> None:
     """This tests a very simple 1 qbit circuit."""
 

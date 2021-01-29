@@ -1,3 +1,5 @@
+"""This module serves as an object-oriented front-end to the jqiskit interface and orchestrates the simulation."""
+
 from typing import Optional, Dict, List
 
 import numpy as np
