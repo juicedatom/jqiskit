@@ -12,6 +12,7 @@ pip install -e .
 
 That should install the jqiskit library and allow for it's api usage.
 
+This was validated on a fresh install of Ubuntu 20.04
 
 ## Examples
 
