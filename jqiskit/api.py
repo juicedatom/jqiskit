@@ -37,6 +37,33 @@ class QuantumCircuit:
         if index < 0 or index >= self.n_qubits:
             raise ValueError(f'Index out of bounds exception: {index}.')
 
+    def x(self, target: int) -> None:
+        """Add a Pauli-X gate.
+
+        Args:
+            target: qubit index to mutate.
+        """
+        self._check_bounds(target)
+        self.program.append(PauliX(target))
+
+    def y(self, target: int) -> None:
+        """Add a Pauli-Y gate.
+
+        Args:
+            target: qubit index to mutate.
+        """
+        self._check_bounds(target)
+        self.program.append(PauliY(target))
+
+    def z(self, target: int) -> None:
+        """Add a Pauli-Z gate.
+
+        Args:
+            target: qubit index to mutate.
+        """
+        self._check_bounds(target)
+        self.program.append(PauliZ(target))
+
     def h(self, target: int) -> None:
         """Add a h gate to the circuit.
 

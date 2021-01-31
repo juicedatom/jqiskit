@@ -33,6 +33,57 @@ class Instruction:
             raise ValueError('Gate matrix not unitary!')
 
 
+class PauliX(Instruction):
+    """Implementation of the Pauli-X gate."""
+    def __init__(self, control: int, target: int) -> None:
+        """Build the gate.
+
+        Args:
+            control: The control bit.
+            target: The bit to mutate.
+            
+        """
+        unitary = np.array([
+            [0, 1],
+            [1, 0],
+        ])
+        super().__init__((control, target), unitary, True)
+
+
+class PauliY(Instruction):
+    """Implementation of the Pauli-Y gate."""
+    def __init__(self, control: int, target: int) -> None:
+        """Build the gate.
+
+        Args:
+            control: The control bit.
+            target: The bit to mutate.
+            
+        """
+        unitary = np.array([
+            [0, -1j],
+            [1j, 0],
+        ])
+        super().__init__((control, target), unitary, True)
+
+
+class PauliZ(Instruction):
+    """Implementation of the Pauli-Z gate."""
+    def __init__(self, control: int, target: int) -> None:
+        """Build the gate.
+
+        Args:
+            control: The control bit.
+            target: The bit to mutate.
+            
+        """
+        unitary = np.array([
+            [1, 0],
+            [0, -1],
+        ])
+        super().__init__((control, target), unitary, True)
+
+
 class Hadamard(Instruction):
     """Implementation of the Hadamard Gate."""
     def __init__(self, target: int) -> None:
